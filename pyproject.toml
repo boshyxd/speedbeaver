@@ -1,0 +1,51 @@
+[project]
+name = "structlog-fastapi"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "asgi-correlation-id>=4.3.4",
+  "fastapi>=0.115.12",
+  "structlog>=25.2.0",
+]
+
+[dependency-groups]
+test = ["pytest>=8.3.5", "pytest-asyncio>=0.26.0"]
+dev = ["pyright>=1.1.398", "ruff>=0.11.2"]
+examples = [
+    "uvicorn>=0.34.0",
+]
+
+
+[tool.ruff]
+line-length = 80
+
+[tool.ruff.lint]
+select = [
+  # pycodestyle
+  "E",
+  # Pyflakes
+  "F",
+  # pyupgrade
+  "UP",
+  # flake8-bugbear
+  "B",
+  # flake8-simplify
+  "SIM",
+  # isort
+  "I",
+  # fastapi
+  "FAST",
+]
+extend-select = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["structlog_fastapi", "tests"]
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+include = ["**/*.py"]
+exclude = ["**/node_modules", "**/__pycache__"]
+pythonVersion = "3.10"
