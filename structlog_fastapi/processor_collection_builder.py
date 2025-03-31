@@ -10,6 +10,7 @@ class ProcessorCollectionBuilder:
         self.processors: list[Processor] = [
             structlog.contextvars.merge_contextvars,
             structlog.stdlib.ExtraAdder(),
+            self._drop_color_message_key,
         ]
 
     def add_logger_name(self) -> "ProcessorCollectionBuilder":
