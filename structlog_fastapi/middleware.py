@@ -13,6 +13,7 @@ from starlette.responses import Response
 from starlette.types import ASGIApp
 from structlog.types import Processor
 
+from structlog_fastapi.config import LogLevel, settings
 from structlog_fastapi.processor_collection_builder import (
     ProcessorCollectionBuilder,
 )
@@ -22,9 +23,9 @@ class StructlogMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app: ASGIApp,
-        json_logs: bool = False,
-        log_level: int = logging.INFO,
-        timestamp_format: str = "iso",
+        json_logs: bool = settings.JSON_LOGS,
+        log_level: LogLevel = settings.LOG_LEVEL,
+        timestamp_format: str = settings.TIMESTAMP_FORMAT,
         processor_override: list[Processor] | None = None,
         propagated_loggers: list[str] | None = None,
         cleared_loggers: list[str] | None = None,
@@ -147,7 +148,7 @@ class StructlogMiddleware(BaseHTTPMiddleware):
     def _setup_handler(
         self,
         shared_processors: list[Processor],
-        log_level: int = logging.INFO,
+        log_level: LogLevel = settings.LOG_LEVEL,
         json_logs: bool = False,
     ):
         log_renderer: structlog.types.Processor
@@ -172,7 +173,7 @@ class StructlogMiddleware(BaseHTTPMiddleware):
         # This lets our processors handle all logging requests.
         handler.setFormatter(formatter)
         self.root_logger.addHandler(handler)
-        self.root_logger.setLevel(log_level)
+        self.root_logger.setLevel(log_level.value)
 
     def _setup_cleared_loggers(
         self,
@@ -194,7 +195,6 @@ class StructlogMiddleware(BaseHTTPMiddleware):
     def _setup_propagated_loggers(
         self,
         propagated_loggers: list[str] | None = None,
-        cleared_loggers: list[str] | None = None,
     ):
         # Usually you do want these to be active in case something breaks
         default_propagated: list[str] = ["uvicorn", "uvicorn.error"]

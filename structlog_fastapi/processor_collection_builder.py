@@ -59,6 +59,14 @@ class ProcessorCollectionBuilder:
         self.processors.append(structlog.processors.format_exc_info)
         return self
 
+    def add_event_key_rename(
+        self, to: str = "message", replace_by: str = "_event"
+    ) -> "ProcessorCollectionBuilder":
+        self.processors.append(
+            structlog.processors.EventRenamer(to, replace_by)
+        )
+        return self
+
     def _drop_color_message_key(
         self, _, __, event_dict: EventDict
     ) -> EventDict:
