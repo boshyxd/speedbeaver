@@ -1,29 +1,55 @@
-from enum import Enum
-from functools import cache
+from typing import Literal
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import (
+    BaseSettings,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
+)
+
+OnOrOff = Literal["ON"] | Literal["OFF"]
+
+LogLevel = (
+    Literal["DEBUG"]
+    | Literal["INFO"]
+    | Literal["WARNING"]
+    | Literal["ERROR"]
+    | Literal["CRITICAL"]
+    | Literal["FATAL"]
+)
 
 
-class LogLevel(str, Enum):
-    DEBUG = "DEBUG"
-    INFO = "INFO"
-    WARNING = "WARNING"
-    ERROR = "ERROR"
-    CRITICAL = "CRITICAL"
-    FATAL = "FATAL"
+class LogSettingsDefaults:
+    JSON_LOGS = "OFF"
+    LOG_LEVEL = "INFO"
+    TIMESTAMP_FORMAT = "iso"
+    LOGGER_NAME = "app"
+
+    TEST_MODE = "OFF"
 
 
 class LogSettings(BaseSettings):
-    JSON_LOGS: bool = False
-    # TODO: Fix this so that environment variables will work
-    LOG_LEVEL: LogLevel = LogLevel.INFO
-    TIMESTAMP_FORMAT: str = "iso"
-    LOGGER_NAME: str = "app"
+    model_config = SettingsConfigDict(env_ignore_empty=True)
 
+    JSON_LOGS: OnOrOff
+    LOG_LEVEL: LogLevel
+    TIMESTAMP_FORMAT: str
+    LOGGER_NAME: str
 
-@cache
-def get_settings() -> LogSettings:
-    return LogSettings()
+    TEST_MODE: OnOrOff
 
-
-settings = get_settings()
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        return super().settings_customise_sources(
+            settings_cls,
+            env_settings,
+            dotenv_settings,
+            file_secret_settings,
+            init_settings,
+        )

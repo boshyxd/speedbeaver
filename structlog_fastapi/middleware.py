@@ -1,5 +1,4 @@
 import logging
-import sys
 import time
 
 import structlog
@@ -9,11 +8,16 @@ from starlette.middleware.base import (
     RequestResponseEndpoint,
 )
 from starlette.requests import Request
-from starlette.responses import Response
+from starlette.responses import JSONResponse, Response
 from starlette.types import ASGIApp
 from structlog.types import Processor
 
-from structlog_fastapi.config import LogLevel, settings
+from structlog_fastapi.config import (
+    LogLevel,
+    LogSettings,
+    LogSettingsDefaults,
+    OnOrOff,
+)
 from structlog_fastapi.processor_collection_builder import (
     ProcessorCollectionBuilder,
 )
@@ -23,9 +27,11 @@ class StructlogMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app: ASGIApp,
-        json_logs: bool = settings.JSON_LOGS,
-        log_level: LogLevel = settings.LOG_LEVEL,
-        timestamp_format: str = settings.TIMESTAMP_FORMAT,
+        json_logs: OnOrOff = LogSettingsDefaults.JSON_LOGS,
+        log_level: LogLevel = LogSettingsDefaults.LOG_LEVEL,
+        timestamp_format: str = LogSettingsDefaults.TIMESTAMP_FORMAT,
+        logger_name: str = LogSettingsDefaults.LOGGER_NAME,
+        test_mode: OnOrOff = LogSettingsDefaults.TEST_MODE,
         processor_override: list[Processor] | None = None,
         propagated_loggers: list[str] | None = None,
         cleared_loggers: list[str] | None = None,
@@ -37,9 +43,21 @@ class StructlogMiddleware(BaseHTTPMiddleware):
         """
         super().__init__(app)
 
-        default_processors = self.get_default_processors(
-            timestamp_format, json_logs
+        self.settings = LogSettings(
+            JSON_LOGS=json_logs,
+            LOG_LEVEL=log_level,
+            TIMESTAMP_FORMAT=timestamp_format,
+            LOGGER_NAME=logger_name,
+            TEST_MODE=test_mode,
         )
+
+        in_test_mode = self.settings.TEST_MODE == "ON"
+        using_json_logs = self.settings.JSON_LOGS == "ON"
+
+        default_processors = self.get_default_processors(
+            timestamp_format, json_logs=using_json_logs
+        )
+
         shared_processors: list[Processor] = (
             default_processors
             if processor_override is None
@@ -51,16 +69,14 @@ class StructlogMiddleware(BaseHTTPMiddleware):
             + [structlog.stdlib.ProcessorFormatter.wrap_for_formatter],
             logger_factory=structlog.stdlib.LoggerFactory(),
             wrapper_class=structlog.stdlib.AsyncBoundLogger,
-            cache_logger_on_first_use=True,
+            cache_logger_on_first_use=not in_test_mode,
         )
 
         self.root_logger = logging.getLogger()
 
-        self._setup_handler(shared_processors, log_level, json_logs)
+        self._setup_handler(shared_processors, json_logs=using_json_logs)
         self._setup_propagated_loggers(propagated_loggers)
         self._setup_cleared_loggers(cleared_loggers)
-
-        sys.excepthook = self.handle_exception
 
     async def dispatch(
         self, request: Request, call_next: RequestResponseEndpoint
@@ -70,15 +86,30 @@ class StructlogMiddleware(BaseHTTPMiddleware):
         structlog.contextvars.bind_contextvars(request_id=request_id)
 
         start_time = time.perf_counter_ns()
-        response = Response(status_code=500)
+        default_error_message = (
+            "Oops, we ran into a problem processing your request. "
+            "Our team is working on fixing it!"
+        )
+        response = JSONResponse(
+            content={
+                "message": default_error_message,
+                "request_id": request_id,
+            },
+            status_code=500,
+        )
         try:
             response = await call_next(request)
         except Exception as e:
-            await structlog.get_logger("structlog_fastapi.error").error(
+            if issubclass(type(e), KeyboardInterrupt):
+                raise
+            error_logger = structlog.get_logger("structlog_fastapi.error")
+            await error_logger.critical(
                 "Uncaught exception",
-                exc_info=(e),
+                exc_info=(type(e), str(e), e.__traceback__),
+                exc_type=type(e),
+                exc_value=str(e),
+                exc_traceback=e.__traceback__,
             )
-            raise
         finally:
             process_time = time.perf_counter_ns() - start_time
             status_code = response.status_code
@@ -90,8 +121,10 @@ class StructlogMiddleware(BaseHTTPMiddleware):
                 client_port = request.client.port
             http_method = request.method
             http_version = request.scope["http_version"]
-            # Recreate the Uvicorn access log format, but add all parameters as structured information
-            await structlog.get_logger("structlog_fastapi.access").info(
+            # Recreate the Uvicorn access log format,
+            # but add all parameters as structured information
+            logger = structlog.get_logger("structlog_fastapi.access")
+            await logger.info(
                 '%s:%s - "%s %s%s HTTP/%s" %s',
                 client_host,
                 client_port,
@@ -113,24 +146,11 @@ class StructlogMiddleware(BaseHTTPMiddleware):
             response.headers["X-Process-Time"] = str(process_time / 10**9)
         return response
 
-    def handle_exception(self, exc_type, exc_value, exc_traceback):
-        """
-        Log any uncaught exception instead of letting it be printed by Python
-        (but leave KeyboardInterrupt untouched to allow users to Ctrl+C to stop)
-        See https://stackoverflow.com/a/16993115/3641865
-        """
-        if issubclass(exc_type, KeyboardInterrupt):
-            sys.__excepthook__(exc_type, exc_value, exc_traceback)
-            return
-
-        self.root_logger.getChild("structlog_fastapi.error").error(
-            "Uncaught exception",
-            exc_info=(exc_type, exc_value, exc_traceback),
-        )
-
     @classmethod
     def get_default_processors(
-        cls, timestamp_format: str = "iso", json_logs: bool = False
+        cls,
+        timestamp_format: str = "iso",
+        json_logs: bool = False,
     ) -> list[Processor]:
         default_processor_builder = (
             ProcessorCollectionBuilder()
@@ -143,13 +163,11 @@ class StructlogMiddleware(BaseHTTPMiddleware):
         )
         if json_logs:
             default_processor_builder.add_exception_info()
+
         return default_processor_builder.get_processors()
 
     def _setup_handler(
-        self,
-        shared_processors: list[Processor],
-        log_level: LogLevel = settings.LOG_LEVEL,
-        json_logs: bool = False,
+        self, shared_processors: list[Processor], json_logs: bool = False
     ):
         log_renderer: structlog.types.Processor
         if json_logs:
@@ -173,7 +191,7 @@ class StructlogMiddleware(BaseHTTPMiddleware):
         # This lets our processors handle all logging requests.
         handler.setFormatter(formatter)
         self.root_logger.addHandler(handler)
-        self.root_logger.setLevel(log_level.value)
+        self.root_logger.setLevel(self.settings.LOG_LEVEL)
 
     def _setup_cleared_loggers(
         self,

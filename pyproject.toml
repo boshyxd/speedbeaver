@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [dependency-groups]
-test = ["pytest>=8.3.5", "pytest-asyncio>=0.26.0"]
+test = ["httpx>=0.28.1", "pytest>=8.3.5", "pytest-asyncio>=0.26.0"]
 dev = ["pyright>=1.1.398", "ruff>=0.11.2"]
 examples = ["uvicorn>=0.34.0"]
 
@@ -48,3 +48,13 @@ venv = ".venv"
 include = ["**/*.py"]
 exclude = ["**/node_modules", "**/__pycache__"]
 pythonVersion = "3.10"
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "session"
+asyncio_mode = "auto"
+log_cli = true
+log_cli_level = "FATAL"
+markers = [
+  "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+  "serial",
+]
