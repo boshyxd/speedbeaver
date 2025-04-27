@@ -2,10 +2,10 @@ import uvicorn
 from asgi_correlation_id import CorrelationIdMiddleware
 from fastapi import FastAPI
 
-from structlog_fastapi import LogLevel, StructlogMiddleware, get_logger
+from structlog_fastapi import StructlogMiddleware, get_logger
 
 app = FastAPI()
-app.add_middleware(StructlogMiddleware, log_level=LogLevel.DEBUG)
+app.add_middleware(StructlogMiddleware, log_level="DEBUG")
 app.add_middleware(CorrelationIdMiddleware)
 
 logger = get_logger()
