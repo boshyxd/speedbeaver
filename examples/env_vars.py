@@ -5,16 +5,14 @@ os.environ.setdefault("JSON_LOGS", "ON")
 os.environ.setdefault("LOGGER_NAME", "env-var-app")
 
 import uvicorn
-from asgi_correlation_id import CorrelationIdMiddleware
 from fastapi import FastAPI
 
-from structlog_fastapi import StructlogMiddleware, get_logger
+import speedbeaver
 
 app = FastAPI()
-app.add_middleware(StructlogMiddleware)
-app.add_middleware(CorrelationIdMiddleware)
+speedbeaver.quick_configure(app)
 
-logger = get_logger()
+logger = speedbeaver.get_logger()
 
 
 @app.get("/")

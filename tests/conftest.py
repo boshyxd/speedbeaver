@@ -9,6 +9,12 @@ os.environ.setdefault("JSON_LOGS", "ON")
 os.environ.setdefault("TEST_MODE", "ON")
 
 
+def _cleanup_handlers_for_logger(logger: logging.Logger | logging.PlaceHolder):
+    handlers = getattr(logger, "handlers", [])
+    for handler in handlers:
+        logging.root.removeHandler(handler)
+
+
 @pytest.fixture(scope="session", autouse=True)
 async def cleanup_logging_handlers():
     try:
@@ -18,9 +24,7 @@ async def cleanup_logging_handlers():
             logging.Logger.manager.loggerDict.values()
         )
         for logger in loggers:
-            handlers = getattr(logger, "handlers", [])
-            for handler in handlers:
-                logging.root.removeHandler(handler)
+            _cleanup_handlers_for_logger(logger)
 
 
 @pytest.fixture(name="decode_log")

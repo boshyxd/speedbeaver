@@ -1,14 +1,12 @@
 import uvicorn
-from asgi_correlation_id import CorrelationIdMiddleware
 from fastapi import FastAPI
 
-from structlog_fastapi import StructlogMiddleware, get_logger
+import speedbeaver
 
 app = FastAPI()
-app.add_middleware(StructlogMiddleware, log_level="DEBUG")
-app.add_middleware(CorrelationIdMiddleware)
+speedbeaver.quick_configure(app, log_level="DEBUG")
 
-logger = get_logger()
+logger = speedbeaver.get_logger()
 
 
 @app.get("/")

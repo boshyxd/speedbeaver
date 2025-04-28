@@ -1,6 +1,6 @@
 import structlog
 
-from structlog_fastapi.config import LogSettingsDefaults
+from speedbeaver.config import LogSettingsDefaults
 
 
 def get_logger(

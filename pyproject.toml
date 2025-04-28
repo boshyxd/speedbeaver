@@ -1,5 +1,5 @@
 [project]
-name = "structlog-fastapi"
+name = "speedbeaver"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -8,8 +8,12 @@ dependencies = [
   "asgi-correlation-id>=4.3.4",
   "fastapi>=0.115.12",
   "pydantic-settings>=2.8.1",
+  "rich>=14.0.0",
   "structlog>=25.2.0",
 ]
+
+[project.optional-dependencies]
+opentelemetry = ["opentelemetry-sdk>=1.32.1"]
 
 [dependency-groups]
 test = ["httpx>=0.28.1", "pytest>=8.3.5", "pytest-asyncio>=0.26.0"]
@@ -40,7 +44,7 @@ select = [
 extend-select = ["E501"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["structlog_fastapi", "tests"]
+known-first-party = ["speedbeaver", "tests"]
 
 [tool.pyright]
 venvPath = "."

@@ -20,6 +20,7 @@ LogLevel = (
 
 class LogSettingsDefaults:
     JSON_LOGS = "OFF"
+    OPENTELEMETRY = "OFF"
     LOG_LEVEL = "INFO"
     TIMESTAMP_FORMAT = "iso"
     LOGGER_NAME = "app"
@@ -31,6 +32,7 @@ class LogSettings(BaseSettings):
     model_config = SettingsConfigDict(env_ignore_empty=True)
 
     JSON_LOGS: OnOrOff
+    OPENTELEMETRY: OnOrOff
     LOG_LEVEL: LogLevel
     TIMESTAMP_FORMAT: str
     LOGGER_NAME: str

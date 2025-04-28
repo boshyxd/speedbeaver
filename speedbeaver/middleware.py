@@ -3,6 +3,8 @@ import time
 
 import structlog
 from asgi_correlation_id.context import correlation_id
+from asgi_correlation_id.middleware import CorrelationIdMiddleware
+from fastapi.applications import FastAPI
 from starlette.middleware.base import (
     BaseHTTPMiddleware,
     RequestResponseEndpoint,
@@ -12,22 +14,27 @@ from starlette.responses import JSONResponse, Response
 from starlette.types import ASGIApp
 from structlog.types import Processor
 
-from structlog_fastapi.config import (
+from speedbeaver.config import (
     LogLevel,
     LogSettings,
     LogSettingsDefaults,
     OnOrOff,
 )
-from structlog_fastapi.processor_collection_builder import (
+from speedbeaver.processor_collection_builder import (
     ProcessorCollectionBuilder,
 )
 
 
 class StructlogMiddleware(BaseHTTPMiddleware):
+    """
+    TODO: Add docs
+    """
+
     def __init__(
         self,
         app: ASGIApp,
         json_logs: OnOrOff = LogSettingsDefaults.JSON_LOGS,
+        opentelemetry: OnOrOff = LogSettingsDefaults.OPENTELEMETRY,
         log_level: LogLevel = LogSettingsDefaults.LOG_LEVEL,
         timestamp_format: str = LogSettingsDefaults.TIMESTAMP_FORMAT,
         logger_name: str = LogSettingsDefaults.LOGGER_NAME,
@@ -45,6 +52,7 @@ class StructlogMiddleware(BaseHTTPMiddleware):
 
         self.settings = LogSettings(
             JSON_LOGS=json_logs,
+            OPENTELEMETRY=opentelemetry,
             LOG_LEVEL=log_level,
             TIMESTAMP_FORMAT=timestamp_format,
             LOGGER_NAME=logger_name,
@@ -52,10 +60,13 @@ class StructlogMiddleware(BaseHTTPMiddleware):
         )
 
         in_test_mode = self.settings.TEST_MODE == "ON"
+        using_opentelemetry = self.settings.OPENTELEMETRY == "ON"
         using_json_logs = self.settings.JSON_LOGS == "ON"
 
         default_processors = self.get_default_processors(
-            timestamp_format, json_logs=using_json_logs
+            timestamp_format,
+            opentelemetry=using_opentelemetry,
+            json_logs=using_json_logs,
         )
 
         shared_processors: list[Processor] = (
@@ -150,6 +161,7 @@ class StructlogMiddleware(BaseHTTPMiddleware):
     def get_default_processors(
         cls,
         timestamp_format: str = "iso",
+        opentelemetry: bool = False,
         json_logs: bool = False,
     ) -> list[Processor]:
         default_processor_builder = (
@@ -163,6 +175,8 @@ class StructlogMiddleware(BaseHTTPMiddleware):
         )
         if json_logs:
             default_processor_builder.add_exception_info()
+        if opentelemetry:
+            default_processor_builder.add_opentelemetry()
 
         return default_processor_builder.get_processors()
 
@@ -229,3 +243,8 @@ class StructlogMiddleware(BaseHTTPMiddleware):
             # by structlog, not any other logger
             logging.getLogger(_propagated_log).handlers.clear()
             logging.getLogger(_propagated_log).propagate = True
+
+
+def quick_configure(app: FastAPI, log_level: LogLevel = "INFO"):
+    app.add_middleware(StructlogMiddleware, log_level=log_level)
+    app.add_middleware(CorrelationIdMiddleware)

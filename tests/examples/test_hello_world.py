@@ -7,8 +7,8 @@ from asgi_correlation_id import CorrelationIdMiddleware
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
-from structlog_fastapi import StructlogMiddleware, get_logger
-from structlog_fastapi.config import LogSettingsDefaults
+from speedbeaver import StructlogMiddleware, get_logger
+from speedbeaver.config import LogSettingsDefaults
 
 app = FastAPI()
 app.add_middleware(

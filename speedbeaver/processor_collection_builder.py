@@ -1,8 +1,16 @@
-from collections.abc import Collection
+import contextlib
+from collections.abc import Callable, Collection
 
 import structlog
 from structlog.processors import CallsiteParameter
 from structlog.types import EventDict, Processor
+
+add_open_telemetry_spans: Callable
+OPENTELEMETRY_IMPORTED = False
+with contextlib.suppress(ImportError):
+    from speedbeaver.opentelemetry import add_open_telemetry_spans
+
+    OPENTELEMETRY_IMPORTED = True
 
 
 class ProcessorCollectionBuilder:
@@ -66,6 +74,14 @@ class ProcessorCollectionBuilder:
             structlog.processors.EventRenamer(to, replace_by)
         )
         return self
+
+    def add_opentelemetry(self):
+        if not OPENTELEMETRY_IMPORTED:
+            raise ImportError(
+                "Opentelemetry SDK has not been installed. "
+                + "Install it with pip install opentelemetry-sdk"
+            )
+        self.processors.append(add_open_telemetry_spans)
 
     def _drop_color_message_key(
         self, _, __, event_dict: EventDict
