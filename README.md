@@ -4,7 +4,7 @@ When asked what their favourite part of a new project is, I can guarantee you ve
 
 Thing is, logs are crucial for both security and development, giving you detailed insights as to what's going on at any given point with an application. They just . . . really suck to set up.
 
-`SpeedBeaver` was built to have a simple, approachable, set-it-and-forget-it way of setting up logging middleware in FastAPI using `structlog`. It's designed as an alternative to the existing [`fastapi-structlog`](https://github.com/redb0/fastapi-logger).
+SpeedBeaver was built to have a simple, approachable, set-it-and-forget-it way of setting up logging middleware in FastAPI using `structlog`. It's designed as an alternative to the existing [`fastapi-structlog`](https://github.com/redb0/fastapi-logger).
 
 ## Current Status
 
@@ -25,6 +25,9 @@ The integration is currently in a pre-alpha state. API is subject to change, as 
 
 ## Installation
 
+> [!CAUTION] NOT AVAILABLE YET
+> SpeedBeaver is NOT yet on PyPI! The below commands will not work until this README is updated and the project is fully released.
+
 ```bash
 pip install speedbeaver
 ```
@@ -37,6 +40,29 @@ pip install speedbeaver[opentelemetry]
 
 ## Configuration
 
-```python
+To drop SpeedBeaver into any async FastAPI app, see the following Python snippet:
 
+```python
+from fastapi import FastAPI
+
+import speedbeaver
+
+app = FastAPI()
+speedbeaver.quick_configure(app)
+
+# Try using the line below instead to see the difference!
+# speedbeaver.quick_configure(app, log_level="DEBUG")
+
+logger = speedbeaver.get_logger()
+
+
+@app.get("/")
+async def index():
+    await logger.debug("I'm a debug message!")
+    await logger.info("Hello, world!")
+    return {"message": "Hello, world!"}
 ```
+
+> [!CAUTION] Async Native
+> SpeedBeaver uses the AsyncBoundLogger from `structlog` as the wrapper class. This may
+> affect usability in apps using synchronous functions.
