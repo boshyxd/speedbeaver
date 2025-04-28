@@ -25,7 +25,7 @@ The integration is currently in a pre-alpha state. API is subject to change, as 
 
 ## Installation
 
-> [!WARNING]
+> [!CAUTION]
 > SpeedBeaver is NOT yet on PyPI! The below commands will not work until this README is updated and the project is fully released.
 
 ```bash
@@ -63,6 +63,6 @@ async def index():
     return {"message": "Hello, world!"}
 ```
 
-> [!CAUTION]
+> [!WARNING]
 > SpeedBeaver uses the AsyncBoundLogger from `structlog` as the wrapper class. This may
 > affect usability in apps using synchronous functions.
