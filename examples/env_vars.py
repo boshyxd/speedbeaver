@@ -1,7 +1,7 @@
 import os
 
 os.environ.setdefault("LOG_LEVEL", "WARNING")
-os.environ.setdefault("JSON_LOGS", "ON")
+os.environ.setdefault("JSON_LOGS", "YES")
 os.environ.setdefault("LOGGER_NAME", "env-var-app")
 
 import uvicorn

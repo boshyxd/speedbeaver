@@ -19,25 +19,25 @@ LogLevel = (
 
 
 class LogSettingsDefaults:
-    JSON_LOGS = "OFF"
-    OPENTELEMETRY = "OFF"
-    LOG_LEVEL = "INFO"
-    TIMESTAMP_FORMAT = "iso"
-    LOGGER_NAME = "app"
+    JSON_LOGS: bool = True
+    OPENTELEMETRY: bool = True
+    LOG_LEVEL: LogLevel = "INFO"
+    TIMESTAMP_FORMAT: str = "iso"
+    LOGGER_NAME: str = "app"
 
-    TEST_MODE = "OFF"
+    TEST_MODE: bool = True
 
 
 class LogSettings(BaseSettings):
     model_config = SettingsConfigDict(env_ignore_empty=True)
 
-    JSON_LOGS: OnOrOff
-    OPENTELEMETRY: OnOrOff
+    JSON_LOGS: bool
+    OPENTELEMETRY: bool
     LOG_LEVEL: LogLevel
     TIMESTAMP_FORMAT: str
     LOGGER_NAME: str
 
-    TEST_MODE: OnOrOff
+    TEST_MODE: bool
 
     @classmethod
     def settings_customise_sources(

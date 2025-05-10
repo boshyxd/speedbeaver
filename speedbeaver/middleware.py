@@ -18,7 +18,6 @@ from speedbeaver.config import (
     LogLevel,
     LogSettings,
     LogSettingsDefaults,
-    OnOrOff,
 )
 from speedbeaver.processor_collection_builder import (
     ProcessorCollectionBuilder,
@@ -33,12 +32,12 @@ class StructlogMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app: ASGIApp,
-        json_logs: OnOrOff = LogSettingsDefaults.JSON_LOGS,
-        opentelemetry: OnOrOff = LogSettingsDefaults.OPENTELEMETRY,
+        json_logs: bool = LogSettingsDefaults.JSON_LOGS,
+        opentelemetry: bool = LogSettingsDefaults.OPENTELEMETRY,
         log_level: LogLevel = LogSettingsDefaults.LOG_LEVEL,
         timestamp_format: str = LogSettingsDefaults.TIMESTAMP_FORMAT,
         logger_name: str = LogSettingsDefaults.LOGGER_NAME,
-        test_mode: OnOrOff = LogSettingsDefaults.TEST_MODE,
+        test_mode: bool = LogSettingsDefaults.TEST_MODE,
         processor_override: list[Processor] | None = None,
         propagated_loggers: list[str] | None = None,
         cleared_loggers: list[str] | None = None,
@@ -59,14 +58,10 @@ class StructlogMiddleware(BaseHTTPMiddleware):
             TEST_MODE=test_mode,
         )
 
-        in_test_mode = self.settings.TEST_MODE == "ON"
-        using_opentelemetry = self.settings.OPENTELEMETRY == "ON"
-        using_json_logs = self.settings.JSON_LOGS == "ON"
-
         default_processors = self.get_default_processors(
             timestamp_format,
-            opentelemetry=using_opentelemetry,
-            json_logs=using_json_logs,
+            opentelemetry=self.settings.OPENTELEMETRY,
+            json_logs=self.settings.JSON_LOGS,
         )
 
         shared_processors: list[Processor] = (
@@ -80,12 +75,12 @@ class StructlogMiddleware(BaseHTTPMiddleware):
             + [structlog.stdlib.ProcessorFormatter.wrap_for_formatter],
             logger_factory=structlog.stdlib.LoggerFactory(),
             wrapper_class=structlog.stdlib.AsyncBoundLogger,
-            cache_logger_on_first_use=not in_test_mode,
+            cache_logger_on_first_use=not self.settings.TEST_MODE,
         )
 
         self.root_logger = logging.getLogger()
 
-        self._setup_handler(shared_processors, json_logs=using_json_logs)
+        self._setup_handler(shared_processors)
         self._setup_propagated_loggers(propagated_loggers)
         self._setup_cleared_loggers(cleared_loggers)
 
@@ -180,11 +175,9 @@ class StructlogMiddleware(BaseHTTPMiddleware):
 
         return default_processor_builder.get_processors()
 
-    def _setup_handler(
-        self, shared_processors: list[Processor], json_logs: bool = False
-    ):
+    def _setup_handler(self, shared_processors: list[Processor]):
         log_renderer: structlog.types.Processor
-        if json_logs:
+        if self.settings.JSON_LOGS:
             log_renderer = structlog.processors.JSONRenderer()
         else:
             log_renderer = structlog.dev.ConsoleRenderer()
