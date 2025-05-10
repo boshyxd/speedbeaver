@@ -1,4 +1,5 @@
 import logging
+import logging.handlers
 import time
 
 import structlog
@@ -24,6 +25,18 @@ from speedbeaver.processor_collection_builder import (
 )
 
 
+def extract_from_record(_, __, event_dict):
+    """
+    Extract thread and process names and add them to the event dict.
+
+    This is primarily for internal use.
+    """
+    record = event_dict["_record"]
+    event_dict["thread_name"] = record.threadName
+    event_dict["process_name"] = record.processName
+    return event_dict
+
+
 class StructlogMiddleware(BaseHTTPMiddleware):
     """
     TODO: Add docs
@@ -38,6 +51,7 @@ class StructlogMiddleware(BaseHTTPMiddleware):
         timestamp_format: str = LogSettingsDefaults.TIMESTAMP_FORMAT,
         logger_name: str = LogSettingsDefaults.LOGGER_NAME,
         test_mode: bool = LogSettingsDefaults.TEST_MODE,
+        log_file_name: str | None = LogSettingsDefaults.LOG_FILE_NAME,
         processor_override: list[Processor] | None = None,
         propagated_loggers: list[str] | None = None,
         cleared_loggers: list[str] | None = None,
@@ -47,6 +61,7 @@ class StructlogMiddleware(BaseHTTPMiddleware):
         - nymous (Link: https://gist.github.com/nymous/f138c7f06062b7c43c060bf03759c29e)
         - nkhitrov (Link: https://gist.github.com/nkhitrov/38adbb314f0d35371eba4ffb8f27078f)
         """
+
         super().__init__(app)
 
         self.settings = LogSettings(
@@ -56,6 +71,7 @@ class StructlogMiddleware(BaseHTTPMiddleware):
             TIMESTAMP_FORMAT=timestamp_format,
             LOGGER_NAME=logger_name,
             TEST_MODE=test_mode,
+            LOG_FILE_NAME=log_file_name,
         )
 
         default_processors = self.get_default_processors(
@@ -70,6 +86,8 @@ class StructlogMiddleware(BaseHTTPMiddleware):
             else processor_override
         )
 
+        # TODO: Figure out how to get file logging
+
         structlog.configure(
             processors=shared_processors
             + [structlog.stdlib.ProcessorFormatter.wrap_for_formatter],
@@ -80,7 +98,7 @@ class StructlogMiddleware(BaseHTTPMiddleware):
 
         self.root_logger = logging.getLogger()
 
-        self._setup_handler(shared_processors)
+        self._setup_handlers(shared_processors)
         self._setup_propagated_loggers(propagated_loggers)
         self._setup_cleared_loggers(cleared_loggers)
 
@@ -175,12 +193,19 @@ class StructlogMiddleware(BaseHTTPMiddleware):
 
         return default_processor_builder.get_processors()
 
-    def _setup_handler(self, shared_processors: list[Processor]):
-        log_renderer: structlog.types.Processor
+    def _setup_handlers(self, shared_processors: list[Processor]):
+        self._add_stream_handler(shared_processors)
+        if self.settings.LOG_FILE_NAME:
+            self._add_file_handler(shared_processors)
+
+        self.root_logger.setLevel(self.settings.LOG_LEVEL)
+
+    def _add_stream_handler(self, shared_processors: list[Processor]):
+        log_renderer: structlog.types.Processor = structlog.dev.ConsoleRenderer(
+            colors=True
+        )
         if self.settings.JSON_LOGS:
             log_renderer = structlog.processors.JSONRenderer()
-        else:
-            log_renderer = structlog.dev.ConsoleRenderer()
 
         formatter = structlog.stdlib.ProcessorFormatter(
             # These run ONLY on `logging` entries that do NOT originate within
@@ -189,16 +214,40 @@ class StructlogMiddleware(BaseHTTPMiddleware):
             # These run on ALL entries after the pre_chain is done.
             processors=[
                 # Remove _record & _from_structlog.
+                extract_from_record,
                 structlog.stdlib.ProcessorFormatter.remove_processors_meta,
                 log_renderer,
             ],
         )
 
         handler = logging.StreamHandler()
-        # This lets our processors handle all logging requests.
         handler.setFormatter(formatter)
         self.root_logger.addHandler(handler)
-        self.root_logger.setLevel(self.settings.LOG_LEVEL)
+
+    def _add_file_handler(self, shared_processors: list[Processor]):
+        assert self.settings.LOG_FILE_NAME
+        log_renderer: structlog.types.Processor = structlog.dev.ConsoleRenderer(
+            colors=False
+        )
+        if self.settings.JSON_LOGS:
+            log_renderer = structlog.processors.JSONRenderer()
+
+        formatter = structlog.stdlib.ProcessorFormatter(
+            # These run ONLY on `logging` entries that do NOT originate within
+            # structlog.
+            foreign_pre_chain=shared_processors,
+            # These run on ALL entries after the pre_chain is done.
+            processors=[
+                structlog.stdlib.ProcessorFormatter.remove_processors_meta,
+                log_renderer,
+            ],
+        )
+
+        handler = logging.handlers.WatchedFileHandler(
+            filename=self.settings.LOG_FILE_NAME
+        )
+        handler.setFormatter(formatter)
+        self.root_logger.addHandler(handler)
 
     def _setup_cleared_loggers(
         self,

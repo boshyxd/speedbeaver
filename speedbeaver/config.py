@@ -19,13 +19,14 @@ LogLevel = (
 
 
 class LogSettingsDefaults:
-    JSON_LOGS: bool = True
-    OPENTELEMETRY: bool = True
+    JSON_LOGS: bool = False
+    OPENTELEMETRY: bool = False
     LOG_LEVEL: LogLevel = "INFO"
     TIMESTAMP_FORMAT: str = "iso"
     LOGGER_NAME: str = "app"
 
-    TEST_MODE: bool = True
+    TEST_MODE: bool = False
+    LOG_FILE_NAME: str | None = None
 
 
 class LogSettings(BaseSettings):
@@ -38,6 +39,7 @@ class LogSettings(BaseSettings):
     LOGGER_NAME: str
 
     TEST_MODE: bool
+    LOG_FILE_NAME: str | None
 
     @classmethod
     def settings_customise_sources(
