@@ -1,7 +1,7 @@
 [project]
 name = "speedbeaver"
 version = "0.1.0"
-description = "Add your description here"
+description = "Setting up logging for FastAPI should not take up the bulk of your time."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -20,6 +20,9 @@ test = ["httpx>=0.28.1", "pytest>=8.3.5", "pytest-asyncio>=0.26.0"]
 dev = ["pyright>=1.1.398", "ruff>=0.11.2"]
 examples = ["uvicorn>=0.34.0"]
 
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.ruff]
 line-length = 80
