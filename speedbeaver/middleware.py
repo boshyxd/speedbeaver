@@ -14,11 +14,12 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.types import ASGIApp
 from structlog.types import Processor
+from typing_extensions import Unpack
 
 from speedbeaver.config import (
     LogLevel,
     LogSettings,
-    LogSettingsDefaults,
+    LogSettingsArgs,
 )
 from speedbeaver.processor_collection_builder import (
     ProcessorCollectionBuilder,
@@ -45,16 +46,17 @@ class StructlogMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app: ASGIApp,
-        json_logs: bool = LogSettingsDefaults.JSON_LOGS,
-        opentelemetry: bool = LogSettingsDefaults.OPENTELEMETRY,
-        log_level: LogLevel = LogSettingsDefaults.LOG_LEVEL,
-        timestamp_format: str = LogSettingsDefaults.TIMESTAMP_FORMAT,
-        logger_name: str = LogSettingsDefaults.LOGGER_NAME,
-        test_mode: bool = LogSettingsDefaults.TEST_MODE,
-        log_file_name: str | None = LogSettingsDefaults.LOG_FILE_NAME,
-        processor_override: list[Processor] | None = None,
-        propagated_loggers: list[str] | None = None,
-        cleared_loggers: list[str] | None = None,
+        **kwargs: Unpack[LogSettingsArgs],
+        # json_logs: bool = LogSettingsDefaults.JSON_LOGS,
+        # opentelemetry: bool = LogSettingsDefaults.OPENTELEMETRY,
+        # log_level: LogLevel = LogSettingsDefaults.LOG_LEVEL,
+        # timestamp_format: str = LogSettingsDefaults.TIMESTAMP_FORMAT,
+        # logger_name: str = LogSettingsDefaults.LOGGER_NAME,
+        # test_mode: bool = LogSettingsDefaults.TEST_MODE,
+        # log_file_name: str | None = LogSettingsDefaults.LOG_FILE_NAME,
+        # processor_override: list[Processor] | None = None,
+        # propagated_loggers: list[str] | None = None,
+        # cleared_loggers: list[str] | None = None,
     ):
         """
         Partial credit for this code goes to:
@@ -64,15 +66,7 @@ class StructlogMiddleware(BaseHTTPMiddleware):
 
         super().__init__(app)
 
-        self.settings = LogSettings(
-            JSON_LOGS=json_logs,
-            OPENTELEMETRY=opentelemetry,
-            LOG_LEVEL=log_level,
-            TIMESTAMP_FORMAT=timestamp_format,
-            LOGGER_NAME=logger_name,
-            TEST_MODE=test_mode,
-            LOG_FILE_NAME=log_file_name,
-        )
+        self.settings = LogSettings(**kwargs)
 
         default_processors = self.get_default_processors(
             timestamp_format,
