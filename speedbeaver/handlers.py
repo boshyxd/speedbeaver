@@ -1,7 +1,8 @@
 import logging
 import logging.handlers
-from typing import TypedDict
+from typing import Any, TypedDict
 
+import orjson
 import structlog
 from pydantic.main import BaseModel
 from structlog.typing import Processor
@@ -19,6 +20,13 @@ def extract_from_record(_, __, event_dict):
     event_dict["thread_name"] = record.threadName
     event_dict["process_name"] = record.processName
     return event_dict
+
+
+def json_serializer(__obj: Any, /, **kwargs):
+    return orjson.dumps(__obj, **kwargs).decode()
+
+
+json_renderer = structlog.processors.JSONRenderer(serializer=json_serializer)
 
 
 class LogHandlerSettings(BaseModel):
@@ -45,7 +53,7 @@ class LogStreamSettings(LogHandlerSettings):
             colors=self.colors
         )
         if self.json_logs:
-            log_renderer = structlog.processors.JSONRenderer()
+            log_renderer = json_renderer
             shared_processors += [structlog.processors.format_exc_info]
 
         formatter = structlog.stdlib.ProcessorFormatter(
@@ -83,7 +91,7 @@ class LogFileSettings(LogHandlerSettings):
             colors=False
         )
         if self.json_logs:
-            log_renderer = structlog.processors.JSONRenderer()
+            log_renderer = json_renderer
             shared_processors += [structlog.processors.format_exc_info]
         formatter = structlog.stdlib.ProcessorFormatter(
             # These run ONLY on `logging` entries that do NOT originate within

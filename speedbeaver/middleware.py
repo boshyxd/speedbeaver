@@ -107,7 +107,7 @@ class StructlogMiddleware(BaseHTTPMiddleware):
                 http_version,
                 status_code,
                 http={
-                    "url": url,
+                    "url": str(url),
                     "status_code": status_code,
                     "method": http_method,
                     "request_id": request_id,
