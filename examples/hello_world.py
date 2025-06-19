@@ -11,7 +11,7 @@ logger = speedbeaver.get_logger()
 
 @app.get("/")
 async def index():
-    await logger.info("Hello, world!")
+    await logger.ainfo("Hello, world!")
     return {"message": "Hello, world!"}
 
 

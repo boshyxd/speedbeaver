@@ -1,5 +1,7 @@
 import logging
-from typing import Any, Literal, TypedDict
+import logging.config
+import logging.handlers
+from typing import Any, TypedDict
 
 import structlog
 from pydantic_settings import (
@@ -8,19 +10,11 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 from structlog.typing import Processor
+from typing_extensions import NotRequired
 
+from speedbeaver.common import LogLevel
+from speedbeaver.handlers import LogFileSettings, LogStreamSettings
 from speedbeaver.processor_collection_builder import ProcessorCollectionBuilder
-
-OnOrOff = Literal["ON"] | Literal["OFF"]
-
-LogLevel = (
-    Literal["DEBUG"]
-    | Literal["INFO"]
-    | Literal["WARNING"]
-    | Literal["ERROR"]
-    | Literal["CRITICAL"]
-    | Literal["FATAL"]
-)
 
 
 def extract_from_record(_, __, event_dict):
@@ -36,37 +30,43 @@ def extract_from_record(_, __, event_dict):
 
 
 class LogSettingsArgs(TypedDict):
-    json_logs: bool
-    opentelemetry: bool
-    log_level: LogLevel
-    timestamp_format: str
-    logger_name: str
+    opentelemetry: NotRequired[bool]
+    timestamp_format: NotRequired[str]
+    logger_name: NotRequired[str]
+    log_level: NotRequired[LogLevel | None]
 
-    test_mode: bool
-    log_file_name: str | None
+    test_mode: NotRequired[bool]
 
-    processor_override: list[Processor] | None
-    propagated_loggers: list[str] | None
-    cleared_loggers: list[str] | None
+    processor_override: NotRequired[list[Processor] | None]
+    propagated_loggers: NotRequired[list[str] | None]
+    cleared_loggers: NotRequired[list[str] | None]
 
 
 class LogSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_ignore_empty=True)
+    model_config = SettingsConfigDict(
+        env_ignore_empty=True,
+        env_nested_delimiter="__",
+        nested_model_default_partial_update=True,
+    )
 
-    json_logs: bool = False
+    stream: LogStreamSettings = LogStreamSettings()
+    file: LogFileSettings = LogFileSettings()
+
     opentelemetry: bool = False
-    log_level: LogLevel = "INFO"
     timestamp_format: str = "iso"
     logger_name: str = "app"
+    log_level: LogLevel | None = None
 
     test_mode: bool = False
-    log_file_name: str | None = None
 
     processor_override: list[Processor] | None = None
     propagated_loggers: list[str] | None = None
     cleared_loggers: list[str] | None = None
 
     def model_post_init(self, context: Any, /) -> None:
+        if self.log_level:
+            self.stream.log_level = self.log_level
+            self.file.log_level = self.log_level
         default_processors = self.get_default_processors()
 
         shared_processors: list[Processor] = (
@@ -75,8 +75,6 @@ class LogSettings(BaseSettings):
             else self.processor_override
         )
 
-        # TODO: Figure out how to get file logging
-
         structlog.configure(
             processors=shared_processors
             + [structlog.stdlib.ProcessorFormatter.wrap_for_formatter],
@@ -84,6 +82,11 @@ class LogSettings(BaseSettings):
             wrapper_class=structlog.stdlib.BoundLogger,
             cache_logger_on_first_use=not self.test_mode,
         )
+
+        self._setup_handlers(shared_processors)
+        self._setup_cleared_loggers(self.cleared_loggers)
+        self._setup_propagated_loggers(self.propagated_loggers)
+
         return super().model_post_init(context)
 
     def get_default_processors(
@@ -98,71 +101,60 @@ class LogSettings(BaseSettings):
             .add_timestamp(format=self.timestamp_format)
             .add_stack_info_renderer()
         )
-        if self.json_logs:
-            default_processor_builder.add_exception_info()
-        if self.opentelemetry:
-            default_processor_builder.add_opentelemetry()
+        # if self.opentelemetry:
+        #     default_processor_builder.add_opentelemetry()
 
         return default_processor_builder.get_processors()
 
     def _setup_handlers(self, shared_processors: list[Processor]):
-        self._stream_handler(shared_processors)
-        if self.log_file_name:
-            self._file_handler(shared_processors)
+        handlers = []
+        stream_handler = self.stream.handler(shared_processors)
+        file_handler = self.file.handler(shared_processors)
+        if stream_handler:
+            handlers.append(stream_handler)
+        if file_handler:
+            handlers.append(file_handler)
 
         root_logger = logging.getLogger()
-        root_logger.setLevel(self.log_level)
+        root_logger.setLevel(logging.NOTSET)
+        root_logger.handlers = handlers
 
-    def _stream_handler(
-        self, shared_processors: list[Processor]
-    ) -> logging.Handler:
-        log_renderer: structlog.types.Processor = structlog.dev.ConsoleRenderer(
-            colors=True
-        )
-        if self.settings.JSON_LOGS:
-            log_renderer = structlog.processors.JSONRenderer()
+    def _setup_cleared_loggers(
+        self,
+        cleared_loggers: list[str] | None = None,
+    ):
+        default_cleared: list[str] = ["uvicorn.access"]
+        if cleared_loggers is None:
+            cleared_loggers = []
+        cleared_loggers.extend(default_cleared)
 
-        formatter = structlog.stdlib.ProcessorFormatter(
-            # These run ONLY on `logging` entries that do NOT originate within
-            # structlog.
-            foreign_pre_chain=shared_processors,
-            # These run on ALL entries after the pre_chain is done.
-            processors=[
-                # Remove _record & _from_structlog.
-                extract_from_record,
-                structlog.stdlib.ProcessorFormatter.remove_processors_meta,
-                log_renderer,
-            ],
-        )
+        for _cleared_log in (
+            cleared_loggers if cleared_loggers is not None else default_cleared
+        ):
+            # This prevents unwanted loggers from getting messages
+            # through to begin with
+            logging.getLogger(_cleared_log).handlers.clear()
+            logging.getLogger(_cleared_log).propagate = False
 
-        handler = logging.StreamHandler()
-        handler.setFormatter(formatter)
-        return handler
+    def _setup_propagated_loggers(
+        self,
+        propagated_loggers: list[str] | None = None,
+    ):
+        # Usually you do want these to be active in case something breaks
+        default_propagated: list[str] = ["uvicorn", "uvicorn.error"]
+        if propagated_loggers is None:
+            propagated_loggers = []
+        propagated_loggers.extend(default_propagated)
 
-    def _add_file_handler(self, shared_processors: list[Processor]):
-        assert self.settings.LOG_FILE_NAME
-        log_renderer: structlog.types.Processor = structlog.dev.ConsoleRenderer(
-            colors=False
-        )
-        if self.settings.JSON_LOGS:
-            log_renderer = structlog.processors.JSONRenderer()
-
-        formatter = structlog.stdlib.ProcessorFormatter(
-            # These run ONLY on `logging` entries that do NOT originate within
-            # structlog.
-            foreign_pre_chain=shared_processors,
-            # These run on ALL entries after the pre_chain is done.
-            processors=[
-                structlog.stdlib.ProcessorFormatter.remove_processors_meta,
-                log_renderer,
-            ],
-        )
-
-        handler = logging.handlers.WatchedFileHandler(
-            filename=self.settings.LOG_FILE_NAME
-        )
-        handler.setFormatter(formatter)
-        self.root_logger.addHandler(handler)
+        for _propagated_log in (
+            propagated_loggers
+            if propagated_loggers is not None
+            else default_propagated
+        ):
+            # This makes sure other loggers (third party) are handled
+            # by structlog, not any other logger
+            logging.getLogger(_propagated_log).handlers.clear()
+            logging.getLogger(_propagated_log).propagate = True
 
     @classmethod
     def settings_customise_sources(

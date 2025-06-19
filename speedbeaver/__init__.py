@@ -1,4 +1,4 @@
-from speedbeaver.config import LogLevel, LogSettings, LogSettingsDefaults
+from speedbeaver.config import LogLevel, LogSettings
 from speedbeaver.methods import get_logger
 from speedbeaver.middleware import StructlogMiddleware, quick_configure
 from speedbeaver.processor_collection_builder import (
@@ -12,5 +12,4 @@ __all__ = [
     "get_logger",
     "quick_configure",
     "LogSettings",
-    "LogSettingsDefaults",
 ]
