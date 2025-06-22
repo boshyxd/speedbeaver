@@ -1,6 +1,4 @@
 import logging
-import logging.config
-import logging.handlers
 from typing import Any, TypedDict
 
 import structlog
