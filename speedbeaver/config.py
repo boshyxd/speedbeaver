@@ -13,7 +13,11 @@ from structlog.typing import Processor
 from typing_extensions import NotRequired
 
 from speedbeaver.common import LogLevel
-from speedbeaver.handlers import LogFileSettings, LogStreamSettings
+from speedbeaver.handlers import (
+    LogFileSettings,
+    LogStreamSettings,
+    LogTestSettings,
+)
 from speedbeaver.processor_collection_builder import ProcessorCollectionBuilder
 
 
@@ -35,7 +39,9 @@ class LogSettingsArgs(TypedDict):
     logger_name: NotRequired[str]
     log_level: NotRequired[LogLevel | None]
 
-    test_mode: NotRequired[bool]
+    stream: NotRequired[LogStreamSettings]
+    file: NotRequired[LogFileSettings]
+    test: NotRequired[LogTestSettings]
 
     processor_override: NotRequired[list[Processor] | None]
     propagated_loggers: NotRequired[list[str] | None]
@@ -51,13 +57,12 @@ class LogSettings(BaseSettings):
 
     stream: LogStreamSettings = LogStreamSettings()
     file: LogFileSettings = LogFileSettings()
+    test: LogTestSettings = LogTestSettings()
 
     opentelemetry: bool = False
     timestamp_format: str = "iso"
     logger_name: str = "app"
     log_level: LogLevel | None = None
-
-    test_mode: bool = False
 
     processor_override: list[Processor] | None = None
     propagated_loggers: list[str] | None = None
@@ -67,6 +72,7 @@ class LogSettings(BaseSettings):
         if self.log_level:
             self.stream.log_level = self.log_level
             self.file.log_level = self.log_level
+            self.test.log_level = self.log_level
         default_processors = self.get_default_processors()
 
         shared_processors: list[Processor] = (
@@ -80,7 +86,7 @@ class LogSettings(BaseSettings):
             + [structlog.stdlib.ProcessorFormatter.wrap_for_formatter],
             logger_factory=structlog.stdlib.LoggerFactory(),
             wrapper_class=structlog.stdlib.BoundLogger,
-            cache_logger_on_first_use=not self.test_mode,
+            cache_logger_on_first_use=not self.test.enabled,
         )
 
         self._setup_handlers(shared_processors)
@@ -110,10 +116,13 @@ class LogSettings(BaseSettings):
         handlers = []
         stream_handler = self.stream.handler(shared_processors)
         file_handler = self.file.handler(shared_processors)
+        test_handler = self.test.handler(shared_processors)
         if stream_handler:
             handlers.append(stream_handler)
         if file_handler:
             handlers.append(file_handler)
+        if test_handler:
+            handlers.append(test_handler)
 
         root_logger = logging.getLogger()
         root_logger.setLevel(logging.NOTSET)

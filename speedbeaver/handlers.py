@@ -1,6 +1,6 @@
 import logging
 import logging.handlers
-from typing import Any, TypedDict
+from typing import Any
 
 import orjson
 import structlog
@@ -35,13 +35,6 @@ class LogHandlerSettings(BaseModel):
     enabled: bool = False
 
 
-class LogStreamSettingsArgs(TypedDict):
-    json_logs: bool
-    log_level: LogLevel
-    enabled: bool
-    colors: bool
-
-
 class LogStreamSettings(LogHandlerSettings):
     enabled: bool = True
     colors: bool = True
@@ -73,13 +66,6 @@ class LogStreamSettings(LogHandlerSettings):
         return handler
 
 
-class LogFileSettingsArgs(TypedDict):
-    json_logs: bool
-    log_level: LogLevel
-    enabled: bool
-    file_name: str | None
-
-
 class LogFileSettings(LogHandlerSettings):
     file_name: str | None = None
 
@@ -107,3 +93,30 @@ class LogFileSettings(LogHandlerSettings):
         handler.setFormatter(formatter)
         handler.setLevel(self.log_level)
         return handler
+
+
+class LogTestSettings(LogHandlerSettings):
+    def handler(self, shared_processors: list[Processor]):
+        if not self.enabled:
+            return None
+
+        log_renderer: structlog.types.Processor = json_renderer
+        shared_processors += [structlog.processors.format_exc_info]
+        formatter = structlog.stdlib.ProcessorFormatter(
+            # These run ONLY on `logging` entries that do NOT originate within
+            # structlog.
+            foreign_pre_chain=shared_processors,
+            # These run on ALL entries after the pre_chain is done.
+            processors=[
+                structlog.stdlib.ProcessorFormatter.remove_processors_meta,
+                log_renderer,
+            ],
+        )
+        handler = logging.handlers.WatchedFileHandler(
+            filename="test.log", mode="w"
+        )
+        handler.setFormatter(formatter)
+        handler.setLevel(self.log_level)
+        return handler
+
+    pass
