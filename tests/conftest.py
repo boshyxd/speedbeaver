@@ -39,13 +39,17 @@ def fixture_decode_log():
     return _decode_log
 
 
-@pytest.fixture(name="log_ctx")
+@pytest.fixture(name="log_ctx", scope="function")
 def fixture_log_ctx(request):
     @asynccontextmanager
     async def _log_ctx():
         logger = get_logger("speedbeaver.test")
         log = logger.bind(test_id=uuid.uuid4().hex, test_name=request.node.name)
-        yield log
-        await log.ainfo("Test complete.")
+
+        try:
+            yield log
+            await log.ainfo("Test complete.")
+        except Exception as e:
+            await log.aexception(str(e))
 
     return _log_ctx

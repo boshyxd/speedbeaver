@@ -1,9 +1,4 @@
-from collections.abc import Callable
-from logging import LogRecord
-from typing import Any
-
 import pytest
-from _pytest.logging import LogCaptureFixture
 from httpx import ASGITransport, AsyncClient
 
 from examples.uncaught_error import app
@@ -21,8 +16,6 @@ async def fixture_test_client():
 
 
 async def test_uncaught_error_app_log(
-    caplog: LogCaptureFixture,
-    decode_log: Callable[[LogRecord], dict[str, Any]],
     test_client: AsyncClient,
     log_ctx,
 ):
@@ -32,8 +25,6 @@ async def test_uncaught_error_app_log(
 
 
 async def test_uncaught_error_access_log(
-    caplog: LogCaptureFixture,
-    decode_log: Callable[[LogRecord], dict[str, Any]],
     test_client: AsyncClient,
     log_ctx,
 ):

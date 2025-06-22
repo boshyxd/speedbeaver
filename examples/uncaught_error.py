@@ -2,9 +2,15 @@ import uvicorn
 from fastapi import FastAPI
 
 import speedbeaver
+from speedbeaver.handlers import LogTestSettings
 
 app = FastAPI()
-speedbeaver.quick_configure(app, log_level="DEBUG")
+# Note: The test settings are mostly for our integration tests
+speedbeaver.quick_configure(
+    app,
+    log_level="DEBUG",
+    test=LogTestSettings(file_name="uncaught_error.test.log"),
+)
 
 logger = speedbeaver.get_logger()
 

@@ -96,9 +96,12 @@ class LogFileSettings(LogHandlerSettings):
 
 
 class LogTestSettings(LogHandlerSettings):
+    file_name: str | None = None
+
     def handler(self, shared_processors: list[Processor]):
         if not self.enabled:
             return None
+        assert self.file_name
 
         log_renderer: structlog.types.Processor = json_renderer
         shared_processors += [structlog.processors.format_exc_info]
@@ -113,7 +116,7 @@ class LogTestSettings(LogHandlerSettings):
             ],
         )
         handler = logging.handlers.WatchedFileHandler(
-            filename="test.log", mode="w"
+            filename=self.file_name, mode="w"
         )
         handler.setFormatter(formatter)
         handler.setLevel(self.log_level)

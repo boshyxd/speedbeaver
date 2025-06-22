@@ -1,5 +1,7 @@
 import os
 
+from speedbeaver.handlers import LogTestSettings
+
 os.environ.setdefault("LOG_LEVEL", "WARNING")
 os.environ.setdefault("STREAM__JSON_LOGS", "YES")
 os.environ.setdefault("LOGGER_NAME", "env-var-app")
@@ -10,7 +12,10 @@ from fastapi import FastAPI
 import speedbeaver
 
 app = FastAPI()
-speedbeaver.quick_configure(app)
+# Note: The test settings are mostly for our integration tests
+speedbeaver.quick_configure(
+    app, test=LogTestSettings(file_name="env_vars.test.log")
+)
 
 logger = speedbeaver.get_logger()
 
