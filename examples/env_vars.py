@@ -17,8 +17,10 @@ logger = speedbeaver.get_logger()
 
 @app.get("/")
 async def index():
-    await logger.ainfo("I should be a secret!")
-    await logger.awarning("This should be the only thing you see!")
+    await logger.ainfo("I should be a secret!", log_tag="hidden")
+    await logger.awarning(
+        "This should be the only thing you see!", log_tag="visible"
+    )
     return {"message": "Testing environment variables."}
 
 
