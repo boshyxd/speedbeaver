@@ -25,7 +25,7 @@ The integration is currently in a pre-alpha state. API is subject to change, as 
 ## Installation
 
 > [!CAUTION]
-> SpeedBeaver is NOT yet on PyPI! The below commands will not work until this README is updated and the project is fully released.
+> SpeedBeaver is NOT yet on PyPI! The below command(s) will not work until this README is updated and the project is fully released.
 
 ```bash
 pip install speedbeaver
