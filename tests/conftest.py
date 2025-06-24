@@ -13,6 +13,8 @@ from speedbeaver.methods import get_logger
 
 os.environ.setdefault("TEST__ENABLED", "True")
 
+logging.getLogger("asyncio").setLevel(logging.ERROR)
+
 
 def _cleanup_handlers_for_logger(logger: logging.Logger | logging.PlaceHolder):
     handlers = getattr(logger, "handlers", [])

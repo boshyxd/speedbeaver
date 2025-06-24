@@ -1,7 +1,26 @@
+import shutil
+from datetime import datetime
+from pathlib import Path
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
 from examples.uncaught_error import app
+
+
+@pytest.fixture(name="test_log_file_path", scope="module")
+def fixture_test_log_file_path(log_dir: Path):
+    return log_dir / "uncaught_error.test.log"
+
+
+@pytest.fixture(scope="module", autouse=True)
+def archive_test_logs(test_log_file_path: Path):
+    yield
+    shutil.move(
+        test_log_file_path,
+        test_log_file_path.parent
+        / f"{datetime.now().isoformat()}.{test_log_file_path.name}",
+    )
 
 
 @pytest.fixture(name="test_client")
