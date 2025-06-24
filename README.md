@@ -31,12 +31,6 @@ The integration is currently in a pre-alpha state. API is subject to change, as 
 pip install speedbeaver
 ```
 
-For OpenTelemetry support:
-
-```bash
-pip install speedbeaver[opentelemetry]
-```
-
 ## Configuration
 
 To drop SpeedBeaver into any async FastAPI app, see the following Python snippet:
