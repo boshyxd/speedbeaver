@@ -15,12 +15,11 @@ The integration is currently in a pre-alpha state. API is subject to change, as 
 - 3-4 lines of config for the basics
 - Optional BYOP (Bring Your Own Processors)
 - Environment variable configuration via Pydantic Settings
-- Async by default
-- OpenTelemetry support (untested)
+- File logging
 
 ### Planned Features
 
-- File logging
+- OpenTelemetry integrations
 - Database integrations
 
 ## Installation
@@ -62,7 +61,3 @@ async def index():
     await logger.info("Hello, world!")
     return {"message": "Hello, world!"}
 ```
-
-> [!WARNING]
-> SpeedBeaver uses the AsyncBoundLogger from `structlog` as the wrapper class. This may
-> affect usability in apps using synchronous functions.
