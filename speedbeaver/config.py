@@ -1,5 +1,5 @@
 import logging
-from typing import Any, TypedDict
+from typing import TypedDict
 
 import structlog
 from pydantic_settings import (
@@ -16,6 +16,7 @@ from speedbeaver.handlers import (
     LogStreamSettings,
     LogTestSettings,
 )
+from speedbeaver.methods import get_logger
 from speedbeaver.processor_collection_builder import ProcessorCollectionBuilder
 
 
@@ -66,7 +67,7 @@ class LogSettings(BaseSettings):
     propagated_loggers: list[str] | None = None
     cleared_loggers: list[str] | None = None
 
-    def model_post_init(self, context: Any, /) -> None:
+    def configure(self) -> None:
         if self.log_level:
             self.stream.log_level = self.log_level
             self.file.log_level = self.log_level
@@ -91,8 +92,6 @@ class LogSettings(BaseSettings):
         self._setup_cleared_loggers(self.cleared_loggers)
         self._setup_propagated_loggers(self.propagated_loggers)
 
-        return super().model_post_init(context)
-
     def get_default_processors(
         self,
     ) -> list[Processor]:
@@ -109,6 +108,9 @@ class LogSettings(BaseSettings):
         #     default_processor_builder.add_opentelemetry()
 
         return default_processor_builder.get_processors()
+
+    def get_logger(self):
+        return get_logger(self.logger_name)
 
     def _setup_handlers(self, shared_processors: list[Processor]):
         handlers = []

@@ -1,5 +1,6 @@
 import logging
 import logging.handlers
+from pathlib import Path
 from typing import Any
 
 import orjson
@@ -116,7 +117,7 @@ class LogTestSettings(LogHandlerSettings):
             ],
         )
         handler = logging.handlers.WatchedFileHandler(
-            filename=self.file_name, mode="w"
+            filename=Path(".") / "logs" / self.file_name
         )
         handler.setFormatter(formatter)
         handler.setLevel(self.log_level)

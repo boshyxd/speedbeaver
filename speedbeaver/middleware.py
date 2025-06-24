@@ -39,6 +39,7 @@ class StructlogMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app: ASGIApp,
+        configure_logs: bool = True,
         **kwargs: Unpack[LogSettingsArgs],
     ):
         """
@@ -49,13 +50,16 @@ class StructlogMiddleware(BaseHTTPMiddleware):
 
         super().__init__(app)
 
-        self.settings = LogSettings(**kwargs)
+        if configure_logs:
+            LogSettings(
+                **kwargs
+            ).configure()  # This just configures the logging automatically
 
     async def dispatch(
         self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
+        structlog.contextvars.unbind_contextvars("request_id")
         request_id = correlation_id.get()
-        structlog.contextvars.clear_contextvars()
         structlog.contextvars.bind_contextvars(request_id=request_id)
 
         start_time = time.perf_counter_ns()
@@ -124,5 +128,6 @@ def quick_configure(
     app: FastAPI,
     **kwargs: Unpack[LogSettingsArgs],
 ):
+    LogSettings(**kwargs).configure()
     app.add_middleware(StructlogMiddleware, **kwargs)
     app.add_middleware(CorrelationIdMiddleware)
