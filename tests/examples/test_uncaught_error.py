@@ -1,13 +1,26 @@
-from collections.abc import Callable
-from logging import LogRecord
-from typing import Any
+import shutil
+from datetime import datetime
+from pathlib import Path
 
 import pytest
-from _pytest.logging import LogCaptureFixture
 from httpx import ASGITransport, AsyncClient
-from starlette.requests import URL
 
 from examples.uncaught_error import app
+
+
+@pytest.fixture(name="test_log_file_path", scope="module")
+def fixture_test_log_file_path(log_dir: Path):
+    return log_dir / "uncaught_error.test.log"
+
+
+@pytest.fixture(scope="module", autouse=True)
+def archive_test_logs(test_log_file_path: Path):
+    yield
+    shutil.move(
+        test_log_file_path,
+        test_log_file_path.parent
+        / f"{datetime.now().isoformat()}.{test_log_file_path.name}",
+    )
 
 
 @pytest.fixture(name="test_client")
@@ -18,36 +31,22 @@ async def fixture_test_client():
         yield client
 
 
-@pytest.mark.xfail
+# TODO: Set these up with the testing handler
+
+
 async def test_uncaught_error_app_log(
-    caplog: LogCaptureFixture,
-    decode_log: Callable[[LogRecord], dict[str, Any]],
     test_client: AsyncClient,
+    log_ctx,
 ):
-    with pytest.raises(Exception) as e_info:
-        response = await test_client.get("/")
-        pass
-
-    app_log = caplog.records[0]
-
-    assert app_log.name == "structlog_fastapi.error"
-    app_log_data = decode_log(app_log)
-    assert app_log_data.get("event") == "Hello, world!"
+    async with log_ctx() as logger:
+        with pytest.raises(Exception) as e_info:
+            response = await test_client.get("/")
 
 
-@pytest.mark.xfail
 async def test_uncaught_error_access_log(
-    caplog: LogCaptureFixture,
-    decode_log: Callable[[LogRecord], dict[str, Any]],
     test_client: AsyncClient,
+    log_ctx,
 ):
-    response = await test_client.get("/")
-    assert response.status_code == 200
-
-    access_log = caplog.records[1]
-
-    assert access_log.name == "structlog_fastapi.access"
-    access_log_data = decode_log(access_log)
-    assert access_log_data["http"]["request_id"]
-    assert access_log_data["http"]["url"] == URL("http://testserver/")
-    assert access_log_data["http"]["status_code"] == 200
+    async with log_ctx() as logger:
+        with pytest.raises(Exception) as e_info:
+            response = await test_client.get("/")

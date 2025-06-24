@@ -12,7 +12,7 @@ The integration is currently in a pre-alpha state. API is subject to change, as 
 
 ## Features
 
-- 4 lines of config for the basics
+- 3-4 lines of config for the basics
 - Optional BYOP (Bring Your Own Processors)
 - Environment variable configuration via Pydantic Settings
 - Async by default
