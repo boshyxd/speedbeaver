@@ -1,6 +1,6 @@
 [project]
 name = "speedbeaver"
-version = "0.1.0"
+version = "0.2.0"
 description = "Setting up logging for FastAPI should not take up the bulk of your time."
 readme = "README.md"
 requires-python = ">=3.10"
