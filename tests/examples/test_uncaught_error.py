@@ -1,12 +1,16 @@
+import os
 import shutil
+from collections.abc import Callable, Coroutine
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 from structlog.stdlib import BoundLogger
 
 from examples.uncaught_error import app
+from tests.conftest import LogLine
 
 
 @pytest.fixture(name="test_log_file_path", scope="module")
@@ -38,14 +42,22 @@ async def fixture_test_client():
 async def test_uncaught_error_app_log(
     test_client: AsyncClient,
     logger: BoundLogger,
+    test_log_file_path: Path,
+    parse_log_file: Callable[
+        [os.PathLike], Coroutine[Any, Any, tuple[list[LogLine], str]]
+    ],
 ):
     with pytest.raises(Exception) as e_info:
         response = await test_client.get("/")
+        await logger.ainfo("Response received...", **response.json())
 
 
 async def test_uncaught_error_access_log(
     test_client: AsyncClient,
-    logger: BoundLogger,
+    test_log_file_path: Path,
+    parse_log_file: Callable[
+        [os.PathLike], Coroutine[Any, Any, tuple[list[LogLine], str]]
+    ],
 ):
     with pytest.raises(Exception) as e_info:
         response = await test_client.get("/")
