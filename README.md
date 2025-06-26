@@ -17,10 +17,11 @@ The integration is currently in a pre-alpha state. API is subject to change, as 
 - Environment variable configuration via Pydantic Settings
 - File logging
 
-### Planned Features
+### Planned Features and Items
 
 - OpenTelemetry integrations
 - Database integrations
+- Documentation
 
 ## Installation
 
@@ -33,7 +34,7 @@ pip install speedbeaver
 
 ## Configuration
 
-To drop SpeedBeaver into any async FastAPI app, see the following Python snippet:
+To drop SpeedBeaver into any FastAPI app, see the following Python snippet:
 
 ```python
 from fastapi import FastAPI
