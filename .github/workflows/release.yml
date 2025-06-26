@@ -10,6 +10,8 @@ permissions:
 
 jobs:
   release:
+    environment:
+      name: pypi
     runs-on: ubuntu-latest
 
     steps:
