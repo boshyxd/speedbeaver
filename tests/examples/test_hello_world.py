@@ -38,8 +38,7 @@ async def test_hello_world_app_log(
 ):
     async with log_ctx() as logger:
         response = await test_client.get("/")
-
-    raise AssertionError("Need this to test changes")
+        assert response.status_code == 201
 
 
 async def test_hello_world_access_log(
@@ -49,5 +48,4 @@ async def test_hello_world_access_log(
 ):
     async with log_ctx() as logger:
         response = await test_client.get("/")
-
-    raise AssertionError("Need this to test changes")
+        assert response.status_code == 200
