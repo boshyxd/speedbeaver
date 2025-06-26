@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from structlog.stdlib import BoundLogger
 
 from examples.uncaught_error import app
 
@@ -36,17 +37,15 @@ async def fixture_test_client():
 
 async def test_uncaught_error_app_log(
     test_client: AsyncClient,
-    log_ctx,
+    logger: BoundLogger,
 ):
-    async with log_ctx() as logger:
-        with pytest.raises(Exception) as e_info:
-            response = await test_client.get("/")
+    with pytest.raises(Exception) as e_info:
+        response = await test_client.get("/")
 
 
 async def test_uncaught_error_access_log(
     test_client: AsyncClient,
-    log_ctx,
+    logger: BoundLogger,
 ):
-    async with log_ctx() as logger:
-        with pytest.raises(Exception) as e_info:
-            response = await test_client.get("/")
+    with pytest.raises(Exception) as e_info:
+        response = await test_client.get("/")

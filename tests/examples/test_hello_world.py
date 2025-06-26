@@ -1,11 +1,16 @@
+import os
 import shutil
+from collections.abc import Callable, Coroutine
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from structlog.stdlib import BoundLogger
 
 from examples.hello_world import app
+from tests.conftest import LogLine
 
 
 @pytest.fixture(name="test_log_file_path", scope="module")
@@ -33,19 +38,25 @@ async def fixture_test_client():
 
 async def test_hello_world_app_log(
     test_client: AsyncClient,
-    log_ctx,
+    test_id: str,
+    logger: BoundLogger,
     test_log_file_path: Path,
+    parse_log_file: Callable[[os.PathLike], Coroutine[Any, Any, list[LogLine]]],
 ):
-    async with log_ctx() as logger:
-        response = await test_client.get("/")
-        assert response.status_code == 201
+    response = await test_client.get("/")
+    assert response.status_code == 200
+
+    log_lines = await parse_log_file(test_log_file_path)
+
+    assert log_lines[0].get("event") == "Hello, world!"
 
 
 async def test_hello_world_access_log(
     test_client: AsyncClient,
-    log_ctx,
+    test_id: str,
+    logger: BoundLogger,
     test_log_file_path: Path,
+    decode_log,
 ):
-    async with log_ctx() as logger:
-        response = await test_client.get("/")
-        assert response.status_code == 200
+    response = await test_client.get("/")
+    assert response.status_code == 200

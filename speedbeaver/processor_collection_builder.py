@@ -37,6 +37,7 @@ class ProcessorCollectionBuilder:
         default_callsite_parameters = {
             structlog.processors.CallsiteParameter.PATHNAME,
             structlog.processors.CallsiteParameter.FILENAME,
+            structlog.processors.CallsiteParameter.LINENO,
             structlog.processors.CallsiteParameter.MODULE,
             structlog.processors.CallsiteParameter.FUNC_NAME,
             structlog.processors.CallsiteParameter.THREAD,
