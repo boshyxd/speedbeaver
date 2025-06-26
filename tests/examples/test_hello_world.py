@@ -1,11 +1,15 @@
+import os
 import shutil
+from collections.abc import Callable, Coroutine
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 
 from examples.hello_world import app
+from tests.conftest import LogLine
 
 
 @pytest.fixture(name="test_log_file_path", scope="module")
@@ -33,21 +37,33 @@ async def fixture_test_client():
 
 async def test_hello_world_app_log(
     test_client: AsyncClient,
-    log_ctx,
     test_log_file_path: Path,
+    parse_log_file: Callable[
+        [os.PathLike], Coroutine[Any, Any, tuple[list[LogLine], str]]
+    ],
 ):
-    async with log_ctx() as logger:
-        response = await test_client.get("/")
+    response = await test_client.get("/")
+    assert response.status_code == 200
 
-    raise AssertionError("Need this to test changes")
+    log_lines, matched_request_id = await parse_log_file(test_log_file_path)
+
+    assert log_lines[0].get("event") == "Hello, world!"
+    for log_line in log_lines:
+        assert log_line.get("request_id") == matched_request_id
 
 
 async def test_hello_world_access_log(
     test_client: AsyncClient,
-    log_ctx,
     test_log_file_path: Path,
+    parse_log_file: Callable[
+        [os.PathLike], Coroutine[Any, Any, tuple[list[LogLine], str]]
+    ],
 ):
-    async with log_ctx() as logger:
-        response = await test_client.get("/")
+    response = await test_client.get("/")
+    assert response.status_code == 200
 
-    raise AssertionError("Need this to test changes")
+    log_lines, matched_request_id = await parse_log_file(test_log_file_path)
+
+    assert log_lines[1].get("event") == '127.0.0.1:123 - "GET / HTTP/1.1" 200'
+    for log_line in log_lines:
+        assert log_line.get("request_id") == matched_request_id
