@@ -7,7 +7,6 @@ from typing import Any
 
 import pytest
 from httpx import ASGITransport, AsyncClient
-from structlog.stdlib import BoundLogger
 
 from examples.hello_world import app
 from tests.conftest import LogLine
@@ -38,25 +37,33 @@ async def fixture_test_client():
 
 async def test_hello_world_app_log(
     test_client: AsyncClient,
-    test_id: str,
-    logger: BoundLogger,
     test_log_file_path: Path,
-    parse_log_file: Callable[[os.PathLike], Coroutine[Any, Any, list[LogLine]]],
+    parse_log_file: Callable[
+        [os.PathLike], Coroutine[Any, Any, tuple[list[LogLine], str]]
+    ],
 ):
     response = await test_client.get("/")
     assert response.status_code == 200
 
-    log_lines = await parse_log_file(test_log_file_path)
+    log_lines, matched_request_id = await parse_log_file(test_log_file_path)
 
     assert log_lines[0].get("event") == "Hello, world!"
+    for log_line in log_lines:
+        assert log_line.get("request_id") == matched_request_id
 
 
 async def test_hello_world_access_log(
     test_client: AsyncClient,
-    test_id: str,
-    logger: BoundLogger,
     test_log_file_path: Path,
-    decode_log,
+    parse_log_file: Callable[
+        [os.PathLike], Coroutine[Any, Any, tuple[list[LogLine], str]]
+    ],
 ):
     response = await test_client.get("/")
     assert response.status_code == 200
+
+    log_lines, matched_request_id = await parse_log_file(test_log_file_path)
+
+    assert log_lines[1].get("event") == '127.0.0.1:123 - "GET / HTTP/1.1" 200'
+    for log_line in log_lines:
+        assert log_line.get("request_id") == matched_request_id

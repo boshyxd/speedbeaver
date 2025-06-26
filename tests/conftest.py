@@ -74,7 +74,7 @@ async def fixture_logger(request, test_id: str):
 def fixture_parse_log_file(
     logger: BoundLogger, test_id: str, decode_log: Callable[[str], LogLine]
 ):
-    async def parse_log_file(path: os.PathLike) -> list[LogLine]:
+    async def parse_log_file(path: os.PathLike) -> tuple[list[LogLine], str]:
         """
         Parses a given log file for log lines matching a given test ID
         """
@@ -97,7 +97,7 @@ def fixture_parse_log_file(
             if log_line.get("test_id") == test_id and not matched_request_id:
                 matched_request_id = request_id
         log_lines = log_lines_by_request_id.get(matched_request_id, [])
-        return log_lines
+        return log_lines, matched_request_id
 
     return parse_log_file
 
