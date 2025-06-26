@@ -8,7 +8,7 @@ SpeedBeaver was built to have a simple, approachable, set-it-and-forget-it way o
 
 ## Current Status
 
-The integration is currently in a pre-alpha state. API is subject to change, as is the name of the library itself, even. Heck, this thing isn't even on PyPI yet!
+The integration is currently in a pre-alpha state. API is subject to change, as is the name of the library itself, even.
 
 ## Features
 

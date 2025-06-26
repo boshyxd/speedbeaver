@@ -80,13 +80,7 @@ class StructlogMiddleware(BaseHTTPMiddleware):
             if issubclass(type(e), KeyboardInterrupt):
                 raise
             error_logger = structlog.stdlib.get_logger("speedbeaver.error")
-            await error_logger.aexception(
-                "Uncaught exception",
-                exc_info=(type(e), str(e), e.__traceback__),
-                exc_type=type(e),
-                exc_value=str(e),
-                exc_traceback=e.__traceback__,
-            )
+            await error_logger.aexception("Uncaught exception")
         finally:
             process_time = time.perf_counter_ns() - start_time
             status_code = response.status_code
