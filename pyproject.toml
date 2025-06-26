@@ -1,5 +1,6 @@
 [project]
 name = "speedbeaver"
+authors = [{ name = "ApprenticeofEnder", email = "github@robertbabaev.tech" }]
 version = "0.2.1"
 description = "Setting up logging for FastAPI should not take up the bulk of your time."
 readme = "README.md"
@@ -12,6 +13,10 @@ dependencies = [
   "rich>=14.0.0",
   "structlog>=25.2.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/ApprenticeofEnder/speedbeaver"
+Issues = "https://github.com/ApprenticeofEnder/speedbeaver/issues"
 
 # TODO
 # [project.optional-dependencies]
