@@ -25,9 +25,6 @@ The integration is currently in a pre-alpha state. API is subject to change, as 
 
 ## Installation
 
-> [!CAUTION]
-> SpeedBeaver is NOT yet on PyPI! The below command(s) will not work until this README is updated and the project is fully released.
-
 ```bash
 pip install speedbeaver
 ```
@@ -37,6 +34,7 @@ pip install speedbeaver
 To drop SpeedBeaver into any FastAPI app, see the following Python snippet:
 
 ```python
+# main.py
 from fastapi import FastAPI
 
 import speedbeaver
@@ -44,15 +42,20 @@ import speedbeaver
 app = FastAPI()
 speedbeaver.quick_configure(app)
 
-# Try using the line below instead to see the difference!
-# speedbeaver.quick_configure(app, log_level="DEBUG")
-
 logger = speedbeaver.get_logger()
 
 
 @app.get("/")
 async def index():
-    await logger.debug("I'm a debug message!")
-    await logger.info("Hello, world!")
+    await logger.adebug("I'm a debug message!")
+    await logger.ainfo("Hello, world!")
     return {"message": "Hello, world!"}
 ```
+
+You can see results immediately running the application with `uvicorn`:
+
+```
+uvicorn main:app --reload
+```
+
+![An example of the logger in action.](https://github.com/ApprenticeofEnder/speedbeaver/blob/main/assets/main-example.png?raw=true)
