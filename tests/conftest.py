@@ -57,6 +57,7 @@ def fixture_log_ctx(request):
             await log.ainfo("Test complete.")
         except Exception as e:
             await log.aexception(str(e))
+            raise
         structlog.contextvars.clear_contextvars()
 
     return _log_ctx
