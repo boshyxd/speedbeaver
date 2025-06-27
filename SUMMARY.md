@@ -1,5 +1,16 @@
 # Contents
 
+## Guides
+
+- [Installation](docs/guides/install.md)
+- [Configuration](docs/guides/configuring.md)
+- [Environment Variables](docs/guides/env-vars.md)
+- [Async Logging](docs/guides/async.md)
+
+## Cookbook
+
+- [Production Setup](docs/cookbook/production-setup.md)
+
 ## API Reference
 
 - [`speedbeaver.common`](docs/api/common/index.md)
@@ -19,14 +30,3 @@
   - [`quick_configure`](/docs/api/middleware/quick-configure.md)
 - [`speedbeaver.processor_collection_builder`](docs/api/processor-collection-builder/index.md)
   - [`ProcessorCollectionBuilder`](/docs/api/processor-collection-builder/processor-collection-builder.md)
-
-## Guides
-
-- [Installation](docs/guides/install.md)
-- [Configuration](docs/guides/configuring.md)
-- [Environment Variables](docs/guides/env-vars.md)
-- [Async Logging](docs/guides/async.md)
-
-## Cookbook
-
-- [Production Setup](docs/cookbook/production-setup.md)
