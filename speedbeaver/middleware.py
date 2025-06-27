@@ -19,18 +19,6 @@ from speedbeaver.config import (
 )
 
 
-def extract_from_record(_, __, event_dict):
-    """
-    Extract thread and process names and add them to the event dict.
-
-    This is primarily for internal use.
-    """
-    record = event_dict["_record"]
-    event_dict["thread_name"] = record.threadName
-    event_dict["process_name"] = record.processName
-    return event_dict
-
-
 class StructlogMiddleware(BaseHTTPMiddleware):
     """
     TODO: Add docs

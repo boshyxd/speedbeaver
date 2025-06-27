@@ -122,5 +122,3 @@ class LogTestSettings(LogHandlerSettings):
         handler.setFormatter(formatter)
         handler.setLevel(self.log_level)
         return handler
-
-    pass

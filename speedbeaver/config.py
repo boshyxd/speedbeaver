@@ -20,18 +20,6 @@ from speedbeaver.methods import get_logger
 from speedbeaver.processor_collection_builder import ProcessorCollectionBuilder
 
 
-def extract_from_record(_, __, event_dict):
-    """
-    Extract thread and process names and add them to the event dict.
-
-    This is primarily for internal use.
-    """
-    record = event_dict["_record"]
-    event_dict["thread_name"] = record.threadName
-    event_dict["process_name"] = record.processName
-    return event_dict
-
-
 class LogSettingsArgs(TypedDict):
     opentelemetry: NotRequired[bool]
     timestamp_format: NotRequired[str]
