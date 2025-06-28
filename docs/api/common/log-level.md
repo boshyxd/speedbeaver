@@ -11,29 +11,6 @@ LogLevel = (
 )
 ```
 
-## Log Level Reference
+## See Also
 
-| Level    | Value        | Used For                                                                  |
-| -------- | ------------ | ------------------------------------------------------------------------- |
-| Debug    | `"DEBUG"`    | Detailed, debug-level information. Ideally, turn these off in production. |
-| Info     | `"INFO"`     | Informational log messages, such as server startup or key events.         |
-| Warning  | `"WARNING"`  |                                                                           |
-| Error    | `"ERROR"`    |                                                                           |
-| Critical | `"CRITICAL"` |                                                                           |
-| Fatal    | `"FATAL"`    |                                                                           |
-
-## Configuring Log Levels
-
-TODO
-
-### Quick Configure
-
-TODO
-
-### As Middleware
-
-TODO
-
-### Environment Variables
-
-TODO
+- [Log Levels](docs/guides/log-levels.md)

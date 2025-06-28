@@ -4,6 +4,7 @@
 
 - [Installation](docs/guides/install.md)
 - [Configuration](docs/guides/configuring.md)
+- [Log Levels](/docs/guides/log-levels.md)
 - [Environment Variables](docs/guides/env-vars.md)
 - [Async Logging](docs/guides/async.md)
 
