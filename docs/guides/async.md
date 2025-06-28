@@ -1,1 +1,3 @@
 # Async Logging
+
+This is coming soon! The documentation is very much under construction...
