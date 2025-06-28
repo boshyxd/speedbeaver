@@ -13,4 +13,4 @@ LogLevel = (
 
 ## See Also
 
-- [Log Levels](docs/guides/log-levels.md)
+- [Log Levels](/docs/guides/log-levels.md)
